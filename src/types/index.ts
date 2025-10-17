@@ -1,12 +1,8 @@
 export type ApiPostMethods = "POST" | "PUT" | "DELETE";
 export type TPayment = "card" | "cash" | "";
-export type IOrderRequest = IBuyer & {
-  total: number | null;
-  items: string[];
-};
-export type IOrderResponse = {
+export type TOrderResponse = {
   id: string;
-  total: number | null;
+  total: number;
 };
 
 export interface IApi {
@@ -34,7 +30,12 @@ export interface IBuyer {
   phone: string;
 }
 
-export interface IResult {
+export interface IOrderRequest extends IBuyer {
+  total: number;
+  items: string[];
+};
+
+export interface IOrderResultApi {
   items: IProduct[];
   total: number;
 }

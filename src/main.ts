@@ -6,7 +6,7 @@ import { Buyer } from './components/models/Buyer';
 import { Api } from './components/base/Api';
 import { API_URL } from './utils/constants';
 import { ServerApi } from './components/communication/ServerAPI';
-import { IResult } from './types';
+import { IOrderResultApi } from './types';
 
 // Проверка работы моделей данных
 const productsModel = new ProductCatalog();
@@ -45,7 +45,7 @@ console.log('Валидация данных покупателя: ', buyerModel
 const apiModel = new Api(API_URL);
 const serverApiModel = new ServerApi(apiModel);
 serverApiModel.getProducts()
-  .then((result: IResult) => {
+  .then((result: IOrderResultApi) => {
     console.log('Товары получены с сервера');
     productsModel.saveProducts(result.items);
     console.log('Массив товаров с сервера: ', productsModel.getProducts()); // Проерка работы класса ProductCatalog

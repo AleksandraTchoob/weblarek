@@ -1,5 +1,5 @@
 import { Api } from '../base/Api';
-import { IApi, IOrderRequest, IOrderResponse, IResult } from '../../types/index';
+import { IApi, IOrderRequest, TOrderResponse, IOrderResultApi } from '../../types/index';
 
 export class ServerApi {
   protected api: IApi;
@@ -8,11 +8,11 @@ export class ServerApi {
     this.api = api;
   }
 
-  async getProducts(): Promise<IResult> {
+  async getProducts(): Promise<IOrderResultApi> {
     return this.api.get('/product/');
   }
 
-  async postOrder(orderRequest: IOrderRequest): Promise<IOrderResponse> {
+  async postOrder(orderRequest: IOrderRequest): Promise<TOrderResponse> {
     return this.api.post('/order/', orderRequest);
   }
 }
