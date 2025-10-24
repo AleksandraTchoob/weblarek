@@ -16,9 +16,10 @@ export class CardBasket extends Card<TCardBasket> {
     this.indexElement = ensureElement<HTMLElement>('.basket__item-index', this.container);
     this.deleteButton = ensureElement<HTMLButtonElement>('.basket__item-delete', this.container);
 
-    this.deleteButton.addEventListener('click', () => {
-      this.events.emit('shopping-cart:remove', this.indexElement);
-    });
+    this.deleteButton.addEventListener('click', () => { 
+      const index = parseInt(this.indexElement.textContent || '1') - 1;
+      this.events.emit('shopping-cart:remove', { index }); 
+    }); 
   }
 
   set index(value: number) {

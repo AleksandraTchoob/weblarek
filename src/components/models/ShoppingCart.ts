@@ -19,10 +19,12 @@ export class ShoppingCart {
 
   deleteSelectedProduct(id: string) {
     this.selectedProducts = this.selectedProducts.filter(selectedProduct => selectedProduct.id !== id);
+    this.events.emit("shopping-cart:changed");
   }
 
   clearShoppingCart() {
     this.selectedProducts = [];
+    this.events.emit("shopping-cart:changed");
   }
 
   getTotal(): number {

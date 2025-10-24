@@ -29,7 +29,6 @@ serverApiModel
   .then((result: IOrderResultApi) => {
     console.log("Товары получены с сервера");
     productsModel.saveProducts(result.items);
-    events.emit("card-catalog:changed");
   })
   .catch((error) => {
     console.error("Ошибка", error);
@@ -48,16 +47,17 @@ events.on("card-catalog:changed", () => {
 
 const modal = new Modal(ensureElement("#modal-container"), events);
 events.on("card:selected", (item: IProduct) => {
-  productsModel.saveProduct(item);
+  productsModel.saveProduct(item); 
+});
+
+events.on("product:selected", (item: IProduct) => {
   const isInShoppingCart = shoppingCartModel.checkSelectedProduct(item.id);
   const cardPreview = new CardPreview(cloneTemplate("#card-preview"), {
     onButtonClick: () => {
       if (isInShoppingCart) {
         shoppingCartModel.deleteSelectedProduct(item.id);
-        events.emit("shopping-cart:changed");
       } else if (item.price !== null) {
         shoppingCartModel.addSelectedProduct(item);
-        events.emit("shopping-cart:changed");
       }
       modal.close();
     },
@@ -77,11 +77,7 @@ const shoppingCartModel = new ShoppingCart(events);
 const header = new Header(ensureElement(".header"), events);
 events.on("shopping-cart:changed", () => {
   header.counter = shoppingCartModel.getSelectedProductsAmount();
-});
-
-const basket = new Basket(cloneTemplate("#basket"), events);
-events.on("shopping-cart:open", () => {
-  const ShoppingCartItems = shoppingCartModel.getSelectedProducts()
+  const shoppingCartItems = shoppingCartModel.getSelectedProducts()
     .map((item, index) => {
       const cardBasket = new CardBasket(cloneTemplate("#card-basket"), events);
       return cardBasket.render({
@@ -90,29 +86,30 @@ events.on("shopping-cart:open", () => {
         index: index + 1,
       });
     });
-  modal.content = basket.render({
-    items: ShoppingCartItems,
-    price: shoppingCartModel.getTotal() || 0,
-  });
+  basket.items = shoppingCartItems;
+  basket.price = shoppingCartModel.getTotal() || 0;
   const isEmpty = shoppingCartModel.getSelectedProductsAmount() === 0;
   basket.setPurchaseOpportunity(isEmpty);
+});
+
+const basket = new Basket(cloneTemplate("#basket"), events);
+events.on("shopping-cart:open", () => {
+  modal.content = basket.render();
   modal.open();
 });
 
-events.on("shopping-cart:remove", (indexElement: HTMLElement) => {
-  const index = parseInt(indexElement.textContent) - 1;
-  const ShoppingCartItems = shoppingCartModel.getSelectedProducts();
-  if (index >= 0 && index < ShoppingCartItems.length) {
-    const item = ShoppingCartItems[index];
+events.on("shopping-cart:remove", (data: { index: number }) => {
+  const shoppingCartItems = shoppingCartModel.getSelectedProducts();
+  if (data.index >= 0 && data.index < shoppingCartItems.length) {
+    const item = shoppingCartItems[data.index];
     shoppingCartModel.deleteSelectedProduct(item.id);
-    events.emit("shopping-cart:changed");
     events.emit("shopping-cart:open");
   }
 });
 
 const buyerModel = new Buyer(events);
-let currentOrderForm: OrderForm;
-let currentContactsForm: ContactsForm;
+const currentOrderForm = new OrderForm(cloneTemplate("#order"), events);
+const currentContactsForm = new ContactsForm(cloneTemplate("#contacts"), events);
 events.on("order:changed", (data: { field: string; value: string }) => {
   if (data.field === "payment") {
     buyerModel.savePaymentType(data.value as TPayment);
@@ -157,44 +154,36 @@ events.on("buyer-data:changed", (data: { field: string }) => {
 });
 
 events.on("order:open", () => {
-  currentOrderForm = new OrderForm(cloneTemplate<HTMLFormElement>("#order"), events);
   modal.content = currentOrderForm.render();
   events.emit("buyer-data:changed", { field: "all" });
 });
 
 events.on("order:submit", () => {
-  currentContactsForm = new ContactsForm(cloneTemplate<HTMLFormElement>("#contacts"), events);
   modal.content = currentContactsForm.render();
   events.emit("buyer-data:changed", { field: "all" });
 });
 
 events.on("contacts:submit", () => {
-  const validation = buyerModel.validate();
-  const hasErrors = Object.values(validation).some((error) => error !== "");
+  const orderData = {
+    ...buyerModel.getData(),
+    items: shoppingCartModel.getSelectedProducts().map((item) => item.id),
+    total: shoppingCartModel.getTotal(),
+  };
 
-  if (!hasErrors) {
-    const orderData = {
-      ...buyerModel.getData(),
-      items: shoppingCartModel.getSelectedProducts().map((item) => item.id),
-      total: shoppingCartModel.getTotal(),
-    };
-    serverApiModel.postOrder(orderData)
-      .then(() => {
-        const success = new Success(cloneTemplate("#success"), {
-          onClick: () => {
-            modal.close();
-            events.emit("order:success");
-          },
-        });
-        success.total = shoppingCartModel.getTotal();
-        modal.content = success.render();
-
-        buyerModel.clearBuyerData();
-        shoppingCartModel.clearShoppingCart();
-        events.emit("shopping-cart:changed");
-      })
-      .catch((error) => {
-        console.error("Ошибка при оформлении заказа:", error);
+  serverApiModel.postOrder(orderData)
+    .then(() => {
+      const success = new Success(cloneTemplate("#success"), {
+        onClick: () => {
+          modal.close();
+        },
       });
-  }
+      success.total = shoppingCartModel.getTotal();
+      modal.content = success.render();
+
+      buyerModel.clearBuyerData();
+      shoppingCartModel.clearShoppingCart();
+    })
+    .catch((error) => {
+      console.error("Ошибка при оформлении заказа:", error);
+    });
 });
