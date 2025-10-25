@@ -1,14 +1,16 @@
 import { ensureElement } from "../../../utils/utils";
 import { IEvents } from "../../base/Events";
-import { Card } from "./Card";
+import { Card, TCard } from "./Card";
 
 export type TCardBasket = {
   index?: number;
+  id?: string;
 };
 
 export class CardBasket extends Card<TCardBasket> {
   protected indexElement: HTMLElement;
   protected deleteButton: HTMLButtonElement;
+  protected _id?: string;
 
   constructor(container: HTMLElement, protected events: IEvents) {
     super(container);
@@ -17,12 +19,17 @@ export class CardBasket extends Card<TCardBasket> {
     this.deleteButton = ensureElement<HTMLButtonElement>('.basket__item-delete', this.container);
 
     this.deleteButton.addEventListener('click', () => { 
-      const index = parseInt(this.indexElement.textContent || '1') - 1;
-      this.events.emit('shopping-cart:remove', { index }); 
+      if (this._id) {
+        this.events.emit('shopping-cart:remove', { id: this._id }); 
+      } 
     }); 
   }
 
   set index(value: number) {
     this.indexElement.textContent = String(value);
+  }
+
+  set id(value: string) {
+    this._id = value;
   }
 }

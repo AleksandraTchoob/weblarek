@@ -81,6 +81,7 @@ events.on("shopping-cart:changed", () => {
     .map((item, index) => {
       const cardBasket = new CardBasket(cloneTemplate("#card-basket"), events);
       return cardBasket.render({
+        id: item.id,
         title: item.title,
         price: item.price,
         index: index + 1,
@@ -94,17 +95,14 @@ events.on("shopping-cart:changed", () => {
 
 const basket = new Basket(cloneTemplate("#basket"), events);
 events.on("shopping-cart:open", () => {
+  const isEmpty = shoppingCartModel.getSelectedProductsAmount() === 0;
+  basket.setPurchaseOpportunity(isEmpty);
   modal.content = basket.render();
   modal.open();
 });
 
-events.on("shopping-cart:remove", (data: { index: number }) => {
-  const shoppingCartItems = shoppingCartModel.getSelectedProducts();
-  if (data.index >= 0 && data.index < shoppingCartItems.length) {
-    const item = shoppingCartItems[data.index];
-    shoppingCartModel.deleteSelectedProduct(item.id);
-    events.emit("shopping-cart:open");
-  }
+events.on("shopping-cart:remove", (data: { id: string }) => {
+  shoppingCartModel.deleteSelectedProduct(data.id);
 });
 
 const buyerModel = new Buyer(events);
